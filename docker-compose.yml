@@ -1,0 +1,11 @@
+version: "3.8"
+
+services:
+  budget-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: budget-manager
+    ports:
+      - "5389:80"
+    restart: always

@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Budget Manager</title>
+  <link rel="icon" type="image/png" href="favicon.png" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- PIN Login (shown until correct PIN entered) -->
+  <div id="pinScreen" class="pin-screen" role="dialog" aria-labelledby="pinTitle" aria-modal="true">
+    <div class="pin-card card">
+      <span class="pin-logo" aria-hidden="true">&#128200;</span>
+      <h1 id="pinTitle" class="pin-title">Budget Manager</h1>
+      <p class="pin-hint">Enter PIN to continue</p>
+      <form id="pinForm" class="pin-form" autocomplete="off">
+        <input type="password" id="pinInput" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="PIN" autocomplete="off" aria-label="PIN" />
+        <p id="pinError" class="pin-error" role="alert" aria-live="polite"></p>
+        <button type="submit" class="btn-primary pin-submit">Unlock</button>
+      </form>
+    </div>
+  </div>
+
+  <div id="appContent" class="app-content hidden">
+  <header class="header">
+    <div class="header-content">
+      <div class="logo">
+        <span class="logo-icon">&#128200;</span>
+        <h1>Budget Manager</h1>
+      </div>
+      <span class="header-date" id="currentDate"></span>
+    </div>
+  </header>
+
+  <main class="main">
+
+    <!-- Summary Cards -->
+    <section class="summary-section">
+      <div class="summary-header">
+        <h2 class="summary-title">Summary</h2>
+        <select id="summaryMonth" aria-label="Filter totals by month" onchange="updateSummary()">
+          <option value="">All time</option>
+          <option value="2026-01">January</option>
+          <option value="2026-02">February</option>
+          <option value="2026-03">March</option>
+          <option value="2026-04">April</option>
+          <option value="2026-05">May</option>
+          <option value="2026-06">June</option>
+          <option value="2026-07">July</option>
+          <option value="2026-08">August</option>
+          <option value="2026-09">September</option>
+          <option value="2026-10">October</option>
+          <option value="2026-11">November</option>
+          <option value="2026-12">December</option>
+        </select>
+      </div>
+      <div class="summary-cards">
+      <div class="card summary-card income-card">
+        <div class="card-icon card-icon--income">&#8679;</div>
+        <div class="card-info">
+          <span class="card-label">Total Income</span>
+          <span class="card-value" id="totalIncome">0.00</span>
+        </div>
+      </div>
+      <div class="card summary-card expense-card">
+        <div class="card-icon card-icon--expense">&#8681;</div>
+        <div class="card-info">
+          <span class="card-label">Total Expenses</span>
+          <span class="card-value" id="totalExpenses">0.00</span>
+        </div>
+      </div>
+      <div class="card summary-card balance-card">
+        <div class="card-icon card-icon--balance">&#8776;</div>
+        <div class="card-info">
+          <span class="card-label">Balance</span>
+          <span class="card-value" id="balance">0.00</span>
+        </div>
+      </div>
+      </div><!-- /.summary-cards -->
+    </section>
+
+    <!-- Monthly Chart -->
+    <section class="card chart-section">
+      <div class="section-header">
+        <h2>Monthly Overview</h2>
+        <select id="chartYear" aria-label="Select year for chart"></select>
+      </div>
+      <div class="chart-wrapper">
+        <canvas id="monthlyChart"></canvas>
+      </div>
+    </section>
+
+    <!-- Form + Filters -->
+    <div class="bottom-grid">
+
+      <!-- Add / Edit Form -->
+      <section class="card form-section">
+        <div class="section-header">
+          <h2 id="formTitle">Add Transaction</h2>
+          <button id="cancelEdit" class="btn-cancel hidden" type="button">Cancel</button>
+        </div>
+        <form id="transactionForm" novalidate>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="txnType">Type</label>
+              <select id="txnType" required></select>
+            </div>
+            <div class="form-group">
+              <label for="txnAmount">Amount</label>
+              <input type="number" id="txnAmount" min="0.01" step="0.01" placeholder="0.00" required />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="txnCategory">Category</label>
+              <select id="txnCategory" required></select>
+            </div>
+            <div class="form-group">
+              <label for="txnDate">Date</label>
+              <input type="date" id="txnDate" required />
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="txnDescription">Description <span class="optional">(optional)</span></label>
+            <input type="text" id="txnDescription" placeholder="e.g. Grocery run, Netflix bill…" maxlength="120" />
+          </div>
+          <button type="submit" class="btn-primary" id="submitBtn">Add Transaction</button>
+        </form>
+      </section>
+
+      <!-- Filters -->
+      <section class="card filter-section">
+        <div class="section-header">
+          <h2>Filter Transactions</h2>
+        </div>
+        <div class="form-group">
+          <label for="filterType">Type</label>
+          <select id="filterType"></select>
+        </div>
+        <div class="form-group">
+          <label for="filterCategory">Category</label>
+          <select id="filterCategory"></select>
+        </div>
+        <div class="form-group">
+          <label for="filterFrom">From Date</label>
+          <input type="date" id="filterFrom" />
+        </div>
+        <div class="form-group">
+          <label for="filterTo">To Date</label>
+          <input type="date" id="filterTo" />
+        </div>
+        <div class="filter-actions">
+          <button class="btn-primary filter-apply" id="applyFilter" type="button">Apply Filters</button>
+          <button class="btn-secondary" id="clearFilter" type="button">Clear</button>
+        </div>
+      </section>
+
+    </div>
+
+    <!-- Transaction List -->
+    <section class="card transactions-section">
+      <div class="section-header">
+        <h2>Transactions</h2>
+        <span class="transaction-count" id="transactionCount">0 transactions</span>
+      </div>
+      <div id="transactionList"></div>
+    </section>
+
+  </main>
+
+  <!-- Toast container -->
+  <div id="toastContainer" aria-live="polite"></div>
+  </div><!-- /#appContent -->
+
+  <script src="app.js"></script>
+</body>
+</html>
