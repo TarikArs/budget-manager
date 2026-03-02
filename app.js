@@ -1,73 +1,41 @@
 /* ============================================================
-   INDEXEDDB LAYER
+   SUPABASE LAYER
    ============================================================ */
 
-const DB_NAME   = 'budgetDB';
-const DB_VER    = 1;
-const STORE     = 'transactions';
+const SUPABASE_URL = 'https://weagikqpgyeaycttihnv.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_YLMqyUhYzEDAhzsDcVA2vg_k11Ndx7e';
 const CURRENCY  = ' Dh';   // single place for currency symbol (shown after amount, e.g. "5000 Dh")
 const APP_PIN   = '0101';  // PIN required to enter the app (change here if needed)
 
-let db = null;
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const TABLE = 'transactions';
 
-function openDB() {
-  return new Promise((resolve, reject) => {
-    const req = indexedDB.open(DB_NAME, DB_VER);
-
-    req.onupgradeneeded = (e) => {
-      const database = e.target.result;
-      if (!database.objectStoreNames.contains(STORE)) {
-        const store = database.createObjectStore(STORE, { keyPath: 'id' });
-        store.createIndex('type',     'type',     { unique: false });
-        store.createIndex('date',     'date',     { unique: false });
-        store.createIndex('category', 'category', { unique: false });
-      }
-    };
-
-    req.onsuccess = (e) => { db = e.target.result; resolve(db); };
-    req.onerror   = (e) => reject(e.target.error);
-  });
+async function openDB() {
+  return sb;
 }
 
-function dbAdd(record) {
-  return new Promise((resolve, reject) => {
-    const tx    = db.transaction(STORE, 'readwrite');
-    const store = tx.objectStore(STORE);
-    record.id   = 'txn_' + Date.now() + '_' + Math.random().toString(36).slice(2, 9);
-    const req   = store.add(record);
-    req.onsuccess = () => resolve(record);
-    req.onerror   = (e) => reject(e.target.error);
-  });
+async function dbAdd(record) {
+  const { data, error } = await sb.from(TABLE).insert(record).select().single();
+  if (error) throw error;
+  return data;
 }
 
-function dbPut(record) {
-  return new Promise((resolve, reject) => {
-    const tx    = db.transaction(STORE, 'readwrite');
-    const store = tx.objectStore(STORE);
-    const req   = store.put(record);
-    req.onsuccess = () => resolve(record);
-    req.onerror   = (e) => reject(e.target.error);
-  });
+async function dbPut(record) {
+  const { id, ...rest } = record;
+  const { data, error } = await sb.from(TABLE).update(rest).eq('id', id).select().single();
+  if (error) throw error;
+  return data;
 }
 
-function dbDelete(id) {
-  return new Promise((resolve, reject) => {
-    const tx    = db.transaction(STORE, 'readwrite');
-    const store = tx.objectStore(STORE);
-    const req   = store.delete(id);
-    req.onsuccess = () => resolve();
-    req.onerror   = (e) => reject(e.target.error);
-  });
+async function dbDelete(id) {
+  const { error } = await sb.from(TABLE).delete().eq('id', id);
+  if (error) throw error;
 }
 
-function dbGetAll() {
-  return new Promise((resolve, reject) => {
-    const tx    = db.transaction(STORE, 'readonly');
-    const store = tx.objectStore(STORE);
-    const req   = store.getAll();
-    req.onsuccess = () => resolve(req.result);
-    req.onerror   = (e) => reject(e.target.error);
-  });
+async function dbGetAll() {
+  const { data, error } = await sb.from(TABLE).select('*').order('date', { ascending: false });
+  if (error) throw error;
+  return data || [];
 }
 
 /* ============================================================
