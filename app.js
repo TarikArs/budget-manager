@@ -100,6 +100,16 @@ function today() {
   return new Date().toISOString().split('T')[0];
 }
 
+function currentMonthRange() {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = d.getMonth();
+  const first = `${y}-${String(m + 1).padStart(2, '0')}-01`;
+  const lastDay = new Date(y, m + 1, 0).getDate();
+  const last = `${y}-${String(m + 1).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+  return { from: first, to: last };
+}
+
 /* ============================================================
    CATEGORY SELECT HELPERS
    ============================================================ */
@@ -470,6 +480,13 @@ async function init() {
   fillTypeSelect('filterType', true);
   fillCategorySelect('income', 'txnCategory');
   fillFilterCategorySelect();
+
+  /* default filter: current month only */
+  const { from, to } = currentMonthRange();
+  state.filters.from = from;
+  state.filters.to   = to;
+  document.getElementById('filterFrom').value = from;
+  document.getElementById('filterTo').value   = to;
 
   /* ---- event listeners ---- */
 
